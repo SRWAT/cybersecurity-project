@@ -1,94 +1,217 @@
-# Nuxt Minimal Starter
+# Deepfake Detection Engine
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+ระบบตรวจจับ Deepfake ด้วย Deep Learning สำหรับไฟล์ภาพ วิดีโอ และเสียง  
+ใช้ XceptionNet สำหรับการวิเคราะห์ภาพ และ Wav2Vec สำหรับการวิเคราะห์เสียง  
+พัฒนาด้วย Nuxt 3 (Frontend) + FastAPI (Backend)
+
+---
+
+## Architecture
+
+```
+browser  ──►  Nuxt 3 (frontend)  ──►  FastAPI (backend)  ──►  TensorFlow model
+               localhost:3000          localhost:8000
+```
+
+| Layer    | Stack                                     |
+|----------|-------------------------------------------|
+| Frontend | Nuxt 3, Vue 3, Tailwind CSS, WaveSurfer.js |
+| Backend  | FastAPI, TensorFlow/Keras, OpenCV, MoviePy |
+| Model    | XceptionNet (visual), Wav2Vec (audio)      |
+| Dataset  | FaceForensics++                            |
+
+---
+
+## Project Structure
+
+```
+CYBERSECURITY-PROJECT/
+├── app/
+│   └── app.vue                    # Root Vue component + UI
+│
+├── server/api/
+│   └── predict.post.ts            # Nuxt server route — proxy to FastAPI
+│
+├── src/
+│   ├── prepare_data.py            # Dataset preprocessing
+│   ├── train_xception.py          # Initial model training
+│   ├── fine_tune.py               # Fine-tuning with resume support
+│   ├── plot_history.py            # Plot training graphs
+│   └── quicktest.py               # Quick inference test
+│
+├── models/
+│   ├── best_xception_model.h5
+│   ├── finetuned_xception_model.h5
+│   ├── train_history.pkl
+│   ├── finetune_history.pkl
+│   └── training_report.png
+│
+├── data/                          # Dataset (ไม่ถูก track โดย git)
+├── public/
+├── nuxt.config.ts
+├── tailwind.config.js
+└── tsconfig.json
+```
+
+---
+
+## Requirements
+
+- Node.js 18+
+- Python 3.10+
+- CUDA-compatible GPU (recommended)
+
+---
 
 ## Setup
 
-Make sure to install dependencies:
+### 1. Clone
 
 ```bash
-# npm
+git clone <repo-url>
+cd CYBERSECURITY-PROJECT
+```
+
+### 2. Node dependencies (Nuxt)
+
+```bash
 npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
 ```
 
-## Development Server
-
-Start the development server on `http://localhost:3000`:
+### 3. Python dependencies (FastAPI + ML)
 
 ```bash
-# npm
+pip install -r requirements.txt
+```
+
+---
+
+## Running
+
+### Development
+
+Start the FastAPI backend first, then the Nuxt dev server.
+
+```bash
+# Terminal 1 — Backend (FastAPI)
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+
+# Terminal 2 — Frontend (Nuxt)
 npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
+Frontend: `http://localhost:3000`  
+Backend API: `http://localhost:8000`
 
-Build the application for production:
+### Production
 
 ```bash
-# npm
+# Backend
+uvicorn app:app --host 0.0.0.0 --port 8000
+
+# Frontend
 npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
+npm run preview
 ```
 
-Locally preview production build:
+---
+
+## Model Training
+
+โมเดลต้องอยู่ในโฟลเดอร์ `models/` ก่อนรัน backend  
+ถ้ายังไม่มีโมเดล ให้เทรนตามขั้นตอนด้านล่าง
+
+### 1. เตรียม Dataset
 
 ```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
+python src/prepare_data.py
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
-# 🛡️ Deepfake Detection AI (Cybersecurity Project)
+จัดโครงสร้าง dataset เป็น:
 
-โปรเจกต์พัฒนาโมเดล Deep Learning เพื่อตรวจจับใบหน้าและเสียงปลอม (Deepfake) 
-โดยเน้นความแม่นยำสูงสำหรับการใช้งานในด้าน Cybersecurity
+```
+data/
+├── train/
+│   ├── real/
+│   └── fake/
+└── val/
+    ├── real/
+    └── fake/
+```
 
-## 🛠️ Tech Stack
-* **Core:** Python, TensorFlow, Keras
-* **Model:** XceptionNet (Vision) & Wav2Vec (Audio)
-* **Dataset:** FaceForensics++
-* **Tools:** OpenCV, MediaPipe, Git
+### 2. เทรนโมเดลหลัก
 
-## 📂 Structure
-* `src/`: Scripts for data preparation and model training.
-* `models/`: Saved model checkpoints.
+```bash
+python src/train_xception.py
+```
 
-## 🚀 Getting Started
-1. Install dependencies: `pip install -r requirements.txt`
-2. Prepare data: `python src/prepare_data.py`
-3. Train model: `python src/train_xception.py`
+บันทึก checkpoint ที่ `models/best_xception_model.h5`
+
+### 3. Fine-tune (Optional)
+
+```bash
+python src/fine_tune.py
+```
+
+รองรับ resume — ถ้ารันซ้ำจะเทรนต่อจาก epoch ที่ค้างไว้โดยอัตโนมัติ  
+บันทึก checkpoint ที่ `models/finetuned_xception_model.h5`
+
+### 4. ดูกราฟผลการเทรน
+
+```bash
+python src/plot_history.py
+```
+
+---
+
+## API Reference
+
+### `POST /predict`
+
+วิเคราะห์รูปภาพ
+
+**Request:** `multipart/form-data` — `file` (image/*)
+
+**Response:**
+```json
+{
+  "success": true,
+  "label": "FAKE",
+  "confidence": 94.2,
+  "frames": ["data:image/jpeg;base64,..."],
+  "message": "..."
+}
+```
+
+### `POST /predict/video`
+
+วิเคราะห์วิดีโอ (สุ่ม 5 เฟรม + สกัดเสียง)
+
+**Request:** `multipart/form-data` — `file` (video/mp4)
+
+**Response:**
+```json
+{
+  "success": true,
+  "visual_prediction": "REAL",
+  "visual_confidence": 87.5,
+  "audio_extracted": true,
+  "audio_file": "tmp_abc123.wav",
+  "frames": ["data:image/jpeg;base64,..."],
+  "message": "..."
+}
+```
+
+### `GET /`
+
+Health check — คืน `model_loaded: true/false`
+
+---
+
+## Supported Formats
+
+| Format | Endpoint         |
+|--------|------------------|
+| JPG, PNG | `/predict`     |
+| MP4    | `/predict/video` |
+| WAV    | *(coming soon)*  |
