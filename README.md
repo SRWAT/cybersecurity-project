@@ -73,3 +73,22 @@ bun run preview
 ```
 
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+# 🛡️ Deepfake Detection AI (Cybersecurity Project)
+
+โปรเจกต์พัฒนาโมเดล Deep Learning เพื่อตรวจจับใบหน้าและเสียงปลอม (Deepfake) 
+โดยเน้นความแม่นยำสูงสำหรับการใช้งานในด้าน Cybersecurity
+
+## 🛠️ Tech Stack
+* **Core:** Python, TensorFlow, Keras
+* **Model:** XceptionNet (Vision) & Wav2Vec (Audio)
+* **Dataset:** FaceForensics++
+* **Tools:** OpenCV, MediaPipe, Git
+
+## 📂 Structure
+* `src/`: Scripts for data preparation and model training.
+* `models/`: Saved model checkpoints.
+
+## 🚀 Getting Started
+1. Install dependencies: `pip install -r requirements.txt`
+2. Prepare data: `python src/prepare_data.py`
+3. Train model: `python src/train_xception.py`

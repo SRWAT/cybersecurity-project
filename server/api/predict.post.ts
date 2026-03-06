@@ -1,20 +1,23 @@
 export default defineEventHandler(async (event) => {
-  // รับไฟล์ที่ส่งมาจาก browser
   const form = await readFormData(event)
-  const file = form.get('file')
+  const file = form.get('file') as File
 
-  // ถ้าไม่มีไฟล์ส่ง error กลับไป
   if (!file) {
     throw createError({ statusCode: 400, message: 'No file provided' })
   }
 
-  // ตอนนี้ยังเป็น mock
-  // พอโมเดลเสร็จ เปลี่ยนแค่ตรงนี้บรรทัดเดียว:
-  // const result = await $fetch('http://localhost:8000/predict', { method: 'POST', body: form })
-  const result = {
-    label: 'FAKE',
-    confidence: 94
-  }
+  // เช็คว่าเป็นรูปหรือวิดีโอ เพื่อเลือกประตูเข้า API ของ Mo ให้ถูกช่อง
+  const isVideo = file.type.startsWith('video/')
+  const apiUrl = isVideo 
+    ? 'http://localhost:8000/predict/video' 
+    : 'http://localhost:8000/predict'
 
+  // ยิงไปหา AI ของ Mo
+  const result = await $fetch(apiUrl, { 
+    method: 'POST', 
+    body: form 
+  })
+
+  // ถ้าเป็นวิดีโอ เราอาจจะต้องปรับให้หน้าเว็บรับตัวแปร visual_label แทน
   return result
 })

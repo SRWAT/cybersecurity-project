@@ -22,3 +22,111 @@ logs
 .env
 .env.*
 !.env.example
+.envrc
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# PyCharm
+#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
+#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
+#  and can be added to the global gitignore or merged into this file.  For a more nuclear
+#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
+#.idea/
+
+# Abstra
+# Abstra is an AI-powered process automation framework.
+# Ignore directories containing user credentials, local state, and settings.
+# Learn more at https://abstra.io/docs
+.abstra/
+
+# Visual Studio Code
+#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
+#  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
+#  and can be added to the global gitignore or merged into this file. However, if you prefer, 
+#  you could uncomment the following to ignore the entire vscode folder
+# .vscode/
+
+# Ruff stuff:
+.ruff_cache/
+
+# PyPI configuration file
+.pypirc
+
+# Cursor
+#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
+#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
+#  refer to https://docs.cursor.com/context/ignore-files
+.cursorignore
+.cursorindexingignore
+
+# Marimo
+marimo/_static/
+marimo/_lsp/
+__marimo__/
+
+# Ignore local data
+data/
+archive/
+*.zip
+
+# Ignore heavy trained models
+models/*.h5
+models/*.pth
+
+# Python system files
+__pycache__/
+.env
+
+# 1.ไฟล์เสียงที่สกัดออกมา (จากฟังก์ชัน extract_audio_from_video)
+*.wav
+*.mp3
+
+# 2.ไฟล์วิดีโอชั่วคราวที่อาจหลงเหลือจากการประมวลผล
+api/temp/
+*.mp4
+*.webp
+
+# 3. Python Cache ในโฟลเดอร์ api
+api/__pycache__/
+
+# 4. OS Specific (ถ้าเพื่อนใช้ Mac แล้วคุณใช้ Windows ไฟล์พวกนี้จะกวนใจมาก)
+.DS_Store
+Thumbs.db
+
+# Ignore VS Code settings
+.vscode/
+
+# Ignore Python bytecode (กันพลาด)
+**/__pycache__/
+
+# Ignore temporary audio/video results
+*.wav
+*.mp4
