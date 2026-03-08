@@ -225,13 +225,48 @@ async function analyze() {
   }
 }
 
-// ─── Derived Helpers ───────────────────────────────────────────────────────────
-function getVerdict(r) {
-  return r?.prediction ?? r?.visual_prediction ?? r?.label ?? null
+// ─── Derived Helpers (Updated for Dual-Engine) ───────────────────────────────
+function getVisualVerdict(r) {
+  if (!r) return null
+  if (fileType.value === 'video') return r.visual_prediction
+  if (fileType.value === 'image') return r.label
+  return null
 }
 
-function getConfidence(r) {
-  return r?.confidence ?? r?.visual_confidence ?? 0
+function getVisualConfidence(r) {
+  if (!r) return 0
+  if (fileType.value === 'video') return r.visual_confidence
+  if (fileType.value === 'image') return r.confidence
+  return 0
+}
+
+function getAudioVerdict(r) {
+  if (!r) return null
+  if (fileType.value === 'video') return r.audio_prediction
+  if (fileType.value === 'audio') return r.label
+  return null
+}
+
+function getAudioConfidence(r) {
+  if (!r) return 0
+  if (fileType.value === 'video') return r.audio_confidence
+  if (fileType.value === 'audio') return r.confidence
+  return 0
+}
+
+function getOverallVerdict(r) {
+  if (!r) return null
+  // ระบบโหด: ถ้าภาพปลอม หรือ เสียงปลอม อย่างใดอย่างหนึ่ง ถือว่าเป็น FAKE ทันที!
+  if (getVisualVerdict(r) === 'FAKE' || getAudioVerdict(r) === 'FAKE') return 'FAKE'
+  return 'REAL'
+}
+
+function getOverallConfidence(r) {
+  if (!r) return 0
+  // ดึงค่าความมั่นใจที่สูงที่สุดของ 2 โมเดลมาแสดงเป็นภาพรวม
+  const vConf = getVisualConfidence(r) || 0
+  const aConf = getAudioConfidence(r) || 0
+  return Math.max(vConf, aConf)
 }
 
 // ─── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -245,7 +280,6 @@ onBeforeUnmount(() => {
 <template>
   <div class="font-sans bg-[#05080c] text-white selection:bg-[#00e5ff] selection:text-black">
 
-    <!-- ── Hero ── -->
     <section
       class="min-h-[85vh] flex flex-col items-center justify-center text-center px-6 relative overflow-hidden"
       aria-label="Hero section"
@@ -277,7 +311,6 @@ onBeforeUnmount(() => {
       </a>
     </section>
 
-    <!-- ── How to Use ── -->
     <section class="bg-[#080b10] border-t border-[#1e2d3d] px-8 md:px-12 py-16" aria-labelledby="how-to-use-heading">
       <div class="max-w-6xl mx-auto">
         <p class="text-[#00e5ff] text-xs tracking-widest uppercase mb-2">// STANDARD OPERATING PROCEDURE</p>
@@ -303,7 +336,6 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <!-- ── Detection Module ── -->
     <section id="detect" class="bg-[#05080c] px-8 md:px-12 py-20 border-t border-[#1e2d3d]" aria-labelledby="detect-heading">
       <div class="max-w-7xl mx-auto">
         <div class="flex justify-between items-end mb-8">
@@ -317,7 +349,6 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <!-- ── Error Banner ── -->
         <div
           v-if="errorMessage"
           role="alert"
@@ -338,7 +369,6 @@ onBeforeUnmount(() => {
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-          <!-- ── Left: Upload Panel ── -->
           <div class="flex flex-col gap-4">
             <div
               class="border border-dashed border-[#1e2d3d] bg-[#0d1117] rounded p-8 flex flex-col items-center justify-center min-h-[400px] transition-all relative overflow-hidden h-full"
@@ -351,7 +381,6 @@ onBeforeUnmount(() => {
               @keydown.space.prevent="!isCameraActive && !file && triggerFileInput()"
             >
 
-              <!-- Camera Active -->
               <template v-if="isCameraActive">
                 <div class="w-full flex flex-col items-center z-20">
                   <video
@@ -383,7 +412,6 @@ onBeforeUnmount(() => {
                 </div>
               </template>
 
-              <!-- File loaded -->
               <template v-else-if="file">
                 <img
                   v-if="fileType === 'image'"
@@ -441,7 +469,6 @@ onBeforeUnmount(() => {
                 </div>
               </template>
 
-              <!-- Empty state -->
               <template v-else>
                 <div class="w-16 h-16 rounded-full bg-[#1e2d3d] flex items-center justify-center mb-6 border border-[#5a7a94]/30" aria-hidden="true">
                   <svg class="w-8 h-8 text-[#5a7a94]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" /></svg>
@@ -473,7 +500,6 @@ onBeforeUnmount(() => {
                 </div>
               </template>
 
-              <!-- Hidden file input -->
               <input
                 ref="fileInput"
                 type="file"
@@ -496,7 +522,6 @@ onBeforeUnmount(() => {
             </button>
           </div>
 
-          <!-- ── Right: Report Panel ── -->
           <div class="border border-[#1e2d3d] bg-[#0d1117] rounded flex flex-col relative overflow-hidden shadow-xl" aria-live="polite" aria-atomic="true">
 
             <div class="bg-[#1e2d3d]/40 px-6 py-4 border-b border-[#1e2d3d] flex justify-between items-center">
@@ -523,7 +548,6 @@ onBeforeUnmount(() => {
 
             <div class="p-6 md:p-8 flex-1 flex flex-col bg-[#080b10]/50">
 
-              <!-- Loading logs -->
               <div v-if="loading" class="flex-1 flex flex-col items-center justify-center gap-6">
                 <div class="w-full bg-[#05080c] border border-[#1e2d3d] rounded p-4 h-48 flex flex-col justify-end overflow-hidden relative" aria-label="Processing logs" aria-live="polite">
                   <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#00e5ff] to-transparent opacity-50" aria-hidden="true"></div>
@@ -540,7 +564,6 @@ onBeforeUnmount(() => {
                 </div>
               </div>
 
-              <!-- Empty state -->
               <div v-else-if="!result" class="flex-1 flex flex-col items-center justify-center text-[#5a7a94] text-sm">
                 <div class="w-20 h-20 rounded-full border border-dashed border-[#5a7a94]/50 flex items-center justify-center mb-6" aria-hidden="true">
                   <svg class="w-10 h-10 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -548,10 +571,8 @@ onBeforeUnmount(() => {
                 <p class="font-mono text-xs uppercase tracking-widest">System ready. Awaiting telemetry.</p>
               </div>
 
-              <!-- Result -->
               <div v-else class="flex-1 flex flex-col gap-6">
 
-                <!-- Frame thumbnails -->
                 <div v-if="result.frames && result.frames.length > 0" class="bg-[#05080c] border border-[#1e2d3d] rounded p-4 overflow-hidden">
                   <p class="text-[#00e5ff] text-[10px] font-bold uppercase tracking-widest mb-3 border-b border-[#1e2d3d] pb-2 flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
@@ -569,43 +590,40 @@ onBeforeUnmount(() => {
                   </div>
                 </div>
 
-                <!-- Verdict banner -->
                 <div
                   class="px-6 py-5 flex items-center gap-5 rounded border shadow-lg"
-                  :class="getVerdict(result) === 'FAKE'
+                  :class="getOverallVerdict(result) === 'FAKE'
                     ? 'bg-red-500/10 border-red-500/40'
                     : 'bg-green-500/10 border-green-500/40'"
                   role="status"
-                  :aria-label="getVerdict(result) === 'FAKE' ? 'Verdict: Deepfake Detected' : 'Verdict: Authentic Media'"
+                  :aria-label="getOverallVerdict(result) === 'FAKE' ? 'Verdict: Deepfake Detected' : 'Verdict: Authentic Media'"
                 >
                   <div class="text-4xl md:text-5xl drop-shadow-lg" aria-hidden="true">
-                    <svg v-if="getVerdict(result) === 'FAKE'" class="w-12 h-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    <svg v-if="getOverallVerdict(result) === 'FAKE'" class="w-12 h-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                     <svg v-else class="w-12 h-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" /></svg>
                   </div>
                   <div>
-                    <p class="text-[10px] font-bold uppercase tracking-widest mb-1" :class="getVerdict(result) === 'FAKE' ? 'text-red-400' : 'text-green-400'">System Verdict</p>
+                    <p class="text-[10px] font-bold uppercase tracking-widest mb-1" :class="getOverallVerdict(result) === 'FAKE' ? 'text-red-400' : 'text-green-400'">System Verdict</p>
                     <p class="text-2xl md:text-3xl font-black text-white tracking-tight">
-                      {{ getVerdict(result) === 'FAKE' ? 'Deepfake Detected' : 'Authentic Media' }}
+                      {{ getOverallVerdict(result) === 'FAKE' ? 'Deepfake Detected' : 'Authentic Media' }}
                     </p>
                   </div>
                 </div>
 
-                <!-- Confidence bar -->
                 <div>
                   <div class="flex justify-between text-[10px] font-bold text-[#5a7a94] mb-2 uppercase tracking-widest">
                     <span>Overall Confidence Level</span>
-                    <span class="text-white" aria-label="Confidence percentage">{{ getConfidence(result) }}%</span>
+                    <span class="text-white" aria-label="Confidence percentage">{{ getOverallConfidence(result) }}%</span>
                   </div>
-                  <div class="h-2.5 bg-[#1e2d3d] rounded overflow-hidden" role="progressbar" :aria-valuenow="getConfidence(result)" aria-valuemin="0" aria-valuemax="100" :aria-label="`Confidence: ${getConfidence(result)}%`">
+                  <div class="h-2.5 bg-[#1e2d3d] rounded overflow-hidden" role="progressbar" :aria-valuenow="getOverallConfidence(result)" aria-valuemin="0" aria-valuemax="100" :aria-label="`Confidence: ${getOverallConfidence(result)}%`">
                     <div
                       class="h-full rounded transition-all duration-1000"
-                      :class="getVerdict(result) === 'FAKE' ? 'bg-red-500 shadow-[0_0_15px_#ef4444]' : 'bg-green-500 shadow-[0_0_15px_#22c55e]'"
-                      :style="{ width: getConfidence(result) + '%' }"
+                      :class="getOverallVerdict(result) === 'FAKE' ? 'bg-red-500 shadow-[0_0_15px_#ef4444]' : 'bg-green-500 shadow-[0_0_15px_#22c55e]'"
+                      :style="{ width: getOverallConfidence(result) + '%' }"
                     ></div>
                   </div>
                 </div>
 
-                <!-- Diagnostic table -->
                 <div class="mt-2 border border-[#1e2d3d] rounded bg-[#0d1117]">
                   <div class="bg-[#1e2d3d]/30 px-5 py-2 text-[10px] font-bold text-white uppercase tracking-widest border-b border-[#1e2d3d] flex items-center gap-2">
                     <svg class="w-4 h-4 text-[#00e5ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
@@ -621,16 +639,29 @@ onBeforeUnmount(() => {
 
                     <div v-if="['image', 'video'].includes(fileType)" class="flex justify-between items-center border-b border-[#1e2d3d]/50 pb-3">
                       <dt class="text-[#5a7a94] uppercase tracking-wider font-bold">Visual Engine (Xception):</dt>
-                      <dd class="font-black px-2 py-0.5 rounded uppercase tracking-wider" :class="getVerdict(result) === 'FAKE' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'">
-                        {{ getVerdict(result) }}
+                      <dd 
+                        v-if="getVisualVerdict(result)"
+                        class="font-black px-2 py-0.5 rounded uppercase tracking-wider" 
+                        :class="getVisualVerdict(result) === 'FAKE' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'"
+                      >
+                        {{ getVisualVerdict(result) }} 
+                        <span class="text-[10px] ml-1 opacity-70">({{ getVisualConfidence(result) }}%)</span>
                       </dd>
+                      <dd v-else class="text-[#5a7a94] font-black uppercase tracking-wider">N/A</dd>
                     </div>
 
                     <div v-if="['audio', 'video'].includes(fileType)" class="flex justify-between items-center border-b border-[#1e2d3d]/50 pb-3">
                       <dt class="text-[#5a7a94] uppercase tracking-wider font-bold">Audio Engine (Wav2Vec):</dt>
-                      <dd class="flex items-center gap-2 font-black uppercase tracking-wider" :class="result.audio_extracted ? 'text-yellow-400' : 'text-[#5a7a94]'">
-                        <span v-if="result.audio_extracted" class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" aria-hidden="true"></span>
-                        {{ result.audio_extracted ? 'Pending Model' : 'N/A' }}
+                      <dd 
+                        v-if="getAudioVerdict(result)"
+                        class="font-black px-2 py-0.5 rounded uppercase tracking-wider" 
+                        :class="getAudioVerdict(result) === 'FAKE' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'"
+                      >
+                        {{ getAudioVerdict(result) }} 
+                        <span class="text-[10px] ml-1 opacity-70">({{ getAudioConfidence(result) }}%)</span>
+                      </dd>
+                      <dd v-else class="flex items-center gap-2 font-black uppercase tracking-wider text-[#5a7a94]">
+                        {{ result.audio_extracted === false ? 'No Audio Detected' : 'N/A' }}
                       </dd>
                     </div>
 
@@ -653,7 +684,6 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <!-- ── Footer ── -->
     <footer class="bg-[#05080c] border-t border-[#1e2d3d] flex flex-col md:flex-row justify-between items-center px-8 py-4 gap-4">
       <div class="flex items-center gap-6">
         <span class="text-white font-black uppercase tracking-widest text-sm">Deepfake Detector</span>
