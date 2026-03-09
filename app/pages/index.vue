@@ -28,7 +28,7 @@ const WAVEFORM_CONFIG = {
 
 // ─── Head ──────────────────────────────────────────────────────────────────────
 useHead({
-  title: 'Deepfake Detection Engine',
+  title: 'Detecta Deepfake Engine',
   meta: [
     { name: 'description', content: 'Advanced Neural Network Engine for Deepfake Detection' }
   ],
@@ -210,10 +210,24 @@ async function analyze() {
   const form = new FormData()
   form.append('file', file.value)
 
+  // 🌟 พุ่งตรงเข้า Ngrok ข้ามข้อจำกัดของ Vercel ทันที!
+  const NGROK_URL = 'https://unhomiletically-biogeochemical-tyesha.ngrok-free.dev'
+  let apiUrl = `${NGROK_URL}/predict`
+
+  if (fileType.value === 'video') {
+    apiUrl = `${NGROK_URL}/predict/video`
+  } else if (fileType.value === 'audio') {
+    apiUrl = `${NGROK_URL}/predict/audio`
+  }
+
   try {
-    const data = await $fetch('/api/predict', {
+    const data = await $fetch(apiUrl, {
       method: 'POST',
       body: form,
+      // ใส่ Header เผื่อไว้กัน Ngrok เด้งหน้าต่างยืนยันสำหรับเวอร์ชันฟรี
+      headers: {
+        'ngrok-skip-browser-warning': 'true'
+      }
     })
     result.value = data
   } catch (err) {
@@ -256,14 +270,12 @@ function getAudioConfidence(r) {
 
 function getOverallVerdict(r) {
   if (!r) return null
-  // ระบบโหด: ถ้าภาพปลอม หรือ เสียงปลอม อย่างใดอย่างหนึ่ง ถือว่าเป็น FAKE ทันที!
   if (getVisualVerdict(r) === 'FAKE' || getAudioVerdict(r) === 'FAKE') return 'FAKE'
   return 'REAL'
 }
 
 function getOverallConfidence(r) {
   if (!r) return 0
-  // ดึงค่าความมั่นใจที่สูงที่สุดของ 2 โมเดลมาแสดงเป็นภาพรวม
   const vConf = getVisualConfidence(r) || 0
   const aConf = getAudioConfidence(r) || 0
   return Math.max(vConf, aConf)
@@ -292,7 +304,7 @@ onBeforeUnmount(() => {
 
       <div class="flex items-center gap-3 mb-8 border border-[#00e5ff33] bg-[#00e5ff]/5 px-4 py-2 shadow-[0_0_15px_#00e5ff33] backdrop-blur-sm z-10">
         <span class="w-2 h-2 rounded-full bg-[#00e5ff] animate-pulse" aria-hidden="true"></span>
-        <span class="text-[#00e5ff] text-xs tracking-widest uppercase font-bold">Deepfake Detection Engine</span>
+        <span class="text-[#00e5ff] text-xs tracking-widest uppercase font-bold">Detecta Deepfake Engine</span>
       </div>
 
       <h1 class="text-6xl md:text-8xl font-black text-white mb-6 leading-none tracking-tight z-10">
@@ -686,7 +698,7 @@ onBeforeUnmount(() => {
 
     <footer class="bg-[#05080c] border-t border-[#1e2d3d] flex flex-col md:flex-row justify-between items-center px-8 py-4 gap-4">
       <div class="flex items-center gap-6">
-        <span class="text-white font-black uppercase tracking-widest text-sm">Deepfake Detector</span>
+        <span class="text-white font-black uppercase tracking-widest text-sm">Detecta Deepfake Engine</span>
       </div>
 
       <div class="flex gap-4 text-[10px] font-mono uppercase tracking-widest border border-[#1e2d3d] bg-[#080b10] px-3 py-1.5 rounded text-[#5a7a94]" role="status" aria-label="System status">
