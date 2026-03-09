@@ -228,16 +228,28 @@ def predict_video_frames(video_path: str, frame_count: int = VIDEO_FRAME_COUNT):
     return avg_score, annotated_frames
 
 def extract_audio_from_video(video_path: str) -> str | None:
+    video = None
     try:
         audio_output = video_path.replace(".mp4", ".wav")
         video = mp.VideoFileClip(video_path)
+        
+        # 🌟 ป้องกันแครช: เช็กว่าวิดีโอนี้มีแทร็กเสียงให้ดึงไหม?
+        if video.audio is None:
+            print("⚠️ วิดีโอนี้ไม่มีเสียง (No Audio Track) ข้ามการสกัดเสียงด้วย Wav2Vec")
+            return None
+            
         video.audio.write_audiofile(audio_output, logger=None)
         video.audio.close()
-        video.close()
         return audio_output
+        
     except Exception as e:
         print(f"❌ สกัดเสียงไม่สำเร็จ: {e}")
         return None
+        
+    finally:
+        # 🌟 ป้องกันไฟล์โดนล็อก (WinError 32): ไม่ว่าจะ Error หรือไม่ ต้องบังคับปิดไฟล์วิดีโอเสมอ!
+        if video is not None:
+            video.close()
 
 # ─── Model Guards ─────────────────────────────────────────────────────────────
 
