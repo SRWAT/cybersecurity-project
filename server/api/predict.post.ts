@@ -7,14 +7,14 @@ export default defineEventHandler(async (event) => {
   }
 
   // เช็คว่าเป็นรูป วิดีโอ หรือเสียง เพื่อเลือกประตูเข้า API ให้ถูกช่อง
-  let apiUrl = 'http://localhost:8000/predict' // ตั้งค่าเริ่มต้นเป็นช่องทางตรวจรูปภาพ
+// เปลี่ยนจาก localhost เป็นลิงก์ที่ได้จาก Ngrok
+let apiUrl = 'https://1a2b-34-56.ngrok-free.app/predict' 
 
-  if (file.type.startsWith('video/')) {
-    apiUrl = 'http://localhost:8000/predict/video'
-  } else if (file.type.startsWith('audio/')) {
-    apiUrl = 'http://localhost:8000/predict/audio' // เพิ่มเงื่อนไขให้วิ่งไปหา Wav2Vec
-  }
-
+if (file.type.startsWith('video/')) {
+  apiUrl = 'https://1a2b-34-56.ngrok-free.app/predict/video'
+} else if (file.type.startsWith('audio/')) {
+  apiUrl = 'https://1a2b-34-56.ngrok-free.app/predict/audio'
+}
   // ยิงไปหา AI ของ Mo
   const result = await $fetch(apiUrl, { 
     method: 'POST', 
